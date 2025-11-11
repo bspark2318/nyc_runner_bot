@@ -8,8 +8,7 @@ from parse_race_table import parse_race_table
 TARGET_URL = os.environ.get('TARGET_URL', 'https://www.reddit.com/r/RunNYC/comments/1nyv8sr/nyrr_91_in_2026_faqs_megathread/')
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '')
-GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
-GIST_ID = os.environ.get('GIST_ID', '')
+DATA_FILE = 'race_data.json'
 
 
 def scrape_race_details_from_reddit(url):
@@ -48,62 +47,30 @@ def scrape_race_details_from_reddit(url):
 
 
 def get_existing_data():
-    """Get existing race data from GitHub Gist"""
-    if not GITHUB_TOKEN or not GIST_ID:
-        print("No Gist credentials configured")
-        return None
-
-    try:
-        headers = {
-            'Authorization': f'token {GITHUB_TOKEN}',
-            'Accept': 'application/vnd.github.v3+json'
-        }
-        response = requests.get(f'https://api.github.com/gists/{GIST_ID}', headers=headers)
-        response.raise_for_status()
-
-        gist_data = response.json()
-        # Get the first file in the gist
-        filename = list(gist_data['files'].keys())[0]
-        content = gist_data['files'][filename]['content']
-
-        return json.loads(content)
-    except Exception as e:
-        print(f"Error fetching from Gist: {e}")
-        return None
+    """Get existing race data from local JSON file"""
+    if os.path.exists(DATA_FILE):
+        try:
+            with open(DATA_FILE, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error reading data file: {e}")
+            return None
+    return None
 
 
 def save_data(current_races):
-    """Save race data to GitHub Gist"""
-    if not GITHUB_TOKEN or not GIST_ID:
-        print("No Gist credentials configured, skipping save")
-        return
-
+    """Save race data to local JSON file"""
     data = {
         'races': current_races,
         'scraped_at': datetime.now().isoformat()
     }
 
     try:
-        headers = {
-            'Authorization': f'token {GITHUB_TOKEN}',
-            'Accept': 'application/vnd.github.v3+json'
-        }
-
-        payload = {
-            'files': {
-                'nyrr_races.json': {
-                    'content': json.dumps(data, indent=2)
-                }
-            }
-        }
-
-        response = requests.patch(f'https://api.github.com/gists/{GIST_ID}',
-                                 headers=headers,
-                                 json=payload)
-        response.raise_for_status()
-        print(f"Saved {len(current_races)} races to Gist")
+        with open(DATA_FILE, 'w') as f:
+            json.dump(data, f, indent=2)
+        print(f"Saved {len(current_races)} races to {DATA_FILE}")
     except Exception as e:
-        print(f"Error saving to Gist: {e}")
+        print(f"Error saving data: {e}")
         raise
 
 
