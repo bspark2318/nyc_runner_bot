@@ -76,7 +76,12 @@ def scrape_race_details_from_reddit(url):
     Returns list with the post data including extracted table
     """
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
     }
 
     # Add .json to get Reddit's JSON API
@@ -296,11 +301,12 @@ def send_notification(current_races, differences):
     if current_batch:
         send_telegram_message(bot_token, chat_id, current_batch)
 
-    # Last Message: Differences/Changes
-    diff_lines = []
+    # Last Message: Differences/Changes (batched if needed)
     if differences:
-        diff_lines.append("🔔 NYRR Race Schedule Updated!\n")
-        diff_lines.append("Changed races:")
+        diff_header = "🚨🚨🚨🚨🚨🚨🚨🚨🚨\n<b>🔔 NYRR RACE SCHEDULE UPDATED! 🔔</b>\n🚨🚨🚨🚨🚨🚨🚨🚨🚨\n\n<b>CHANGED RACES:</b>\n\n"
+        diff_batch = diff_header
+        diff_batch_count = 0
+
         for diff in differences:
             race_name = diff.get('race_name', 'N/A')
             date = diff.get('date', 'N/A')
@@ -310,14 +316,20 @@ def send_notification(current_races, differences):
             race_text = f"<b>{race_name}</b>\n📅 <b>Date:</b> {date}\n🚨 <b><u>RELEASE DATE: {release_date}</u></b>"
             if notes:
                 race_text += f"\n📝 {notes}"
+            race_text += "\n\n"
 
-            diff_lines.append(race_text)
+            # Check if adding this race would exceed limit
+            if len(diff_batch) + len(race_text) > 4000:
+                send_telegram_message(bot_token, chat_id, diff_batch)
+                diff_batch_count += 1
+                diff_batch = f"🔔 <b>Changed races (continued {diff_batch_count}):</b>\n\n" + race_text
+            else:
+                diff_batch += race_text
+
+        # Send remaining batch
+        if diff_batch:
+            send_telegram_message(bot_token, chat_id, diff_batch)
     else:
-        diff_lines.append("✅ No changes detected")
-
-    send_telegram_message(bot_token, chat_id, '\n'.join(diff_lines))
+        send_telegram_message(bot_token, chat_id, "✅ No changes detected")
 
     print("All Telegram notifications sent successfully")
-
-
-lambda_handler({}, {})

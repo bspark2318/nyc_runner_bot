@@ -55,15 +55,13 @@ cd package
 # Install dependencies
 pip install -r ../requirements.txt -t .
 
-# Copy Lambda function
+# Copy Lambda function and dependencies
 cp ../lambda_function.py .
+cp ../parse_race_table.py .
 
 # Create ZIP file
 zip -r ../lambda-deployment.zip .
 cd ..
-
-# Add the lambda function to zip
-zip -g lambda-deployment.zip lambda_function.py
 ```
 
 ## Step 4: Create IAM Role for Lambda
@@ -123,7 +121,7 @@ aws lambda create-function \
     --zip-file fileb://lambda-deployment.zip \
     --timeout 60 \
     --memory-size 256 \
-    --environment Variables="{DYNAMODB_TABLE=reddit-scraper,SUBREDDIT_URL=https://www.reddit.com/r/python/,TELEGRAM_BOT_TOKEN=YOUR_BOT_TOKEN,TELEGRAM_CHAT_ID=YOUR_CHAT_ID}" \
+    --environment Variables="{TARGET_URL=https://www.reddit.com/r/RunNYC/comments/1nyv8sr/nyrr_91_in_2026_faqs_megathread/,SECRET_NAME=reddit-scraper/telegram}"
     --region us-east-1
 ```
 
@@ -168,14 +166,14 @@ cat output.json
 
 ## Customization
 
-### Change Subreddit
+### Change Target URL
 
 Update the environment variable:
 
 ```bash
 aws lambda update-function-configuration \
     --function-name reddit-scraper \
-    --environment Variables="{DYNAMODB_TABLE=reddit-scraper,SUBREDDIT_URL=https://www.reddit.com/r/YOUR_SUBREDDIT/,TELEGRAM_BOT_TOKEN=YOUR_BOT_TOKEN,TELEGRAM_CHAT_ID=YOUR_CHAT_ID}"
+    --environment Variables="{TARGET_URL=https://www.reddit.com/r/RunNYC/comments/YOUR_POST_ID/,SECRET_NAME=reddit-scraper/telegram}"
 ```
 
 ### Change Schedule

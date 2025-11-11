@@ -13,6 +13,9 @@ package/
 lambda-deployment.zip
 output.json
 
+# Local data files (data is stored in Gist, not in repo)
+race_data.json
+
 # IDE
 .vscode/
 .idea/
