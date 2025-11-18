@@ -3,8 +3,10 @@ import os
 from datetime import datetime
 import requests
 from parse_race_table import parse_race_table
+from dotenv import load_dotenv
 
 # Environment variables
+load_dotenv()
 TARGET_URL = os.environ.get('TARGET_URL', 'https://www.reddit.com/r/RunNYC/comments/1nyv8sr/nyrr_91_in_2026_faqs_megathread/')
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '')
