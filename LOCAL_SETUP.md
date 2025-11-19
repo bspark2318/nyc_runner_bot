@@ -315,8 +315,6 @@ nano .env
 
 **Add your credentials:**
 ```
-TELEGRAM_BOT_TOKEN=8433824682:AAETjIcPbuTMkvSlIWhTAo_XVHVIwSd7Lao
-TELEGRAM_CHAT_ID=6605542070
 TARGET_URL=https://www.reddit.com/r/RunNYC/comments/1nyv8sr/nyrr_91_in_2026_faqs_megathread/
 ```
 
