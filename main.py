@@ -137,39 +137,43 @@ def send_telegram_message(text):
         return False
 
 
-def send_notification(current_races, differences):
+def send_notification(current_races, differences, is_sunday=False):
     """Send Telegram notification about race data"""
-    # Message 0: Header with timestamp
     now = datetime.now()
     date_str = now.strftime("%B %d, %Y at %I:%M %p")
-    header_message = f"══════════════\n══════════════\n══════════════\n<b>📊 NYRR UPDATE</b>\n<b>{date_str}</b>\n══════════════\n══════════════\n══════════════"
+
+    # Header
+    header_type = "📊 SUNDAY NYRR UPDATE" if is_sunday else "📊 NYRR UPDATE"
+    header_message = f"<b>{header_type}</b>\n<b>{date_str}</b>"
+    
     send_telegram_message(header_message)
 
-    # Message 1+: All current races (batched to stay under 4096 char limit)
-    header = "━━━━━━━━━━━━━━━━━━\n<b>All Current Races:</b>\n\n"
-    current_batch = header
-    batch_count = 0
+    # Sunday: Send full race list
+    if is_sunday:
+        header = "━━━━━━━━━━━━━━━━━━\n<b>All Current Races:</b>\n\n"
+        current_batch = header
+        batch_count = 0
 
-    for race in current_races:
-        race_name = race.get('race_name', 'N/A')
-        date = race.get('date', 'N/A')
-        release_date = race.get('release_date', 'N/A')
+        for race in current_races:
+            race_name = race.get('race_name', 'N/A')
+            date = race.get('date', 'N/A')
+            release_date = race.get('release_date', 'N/A')
 
-        race_text = f"<b>{race_name}</b>\nDate: {date}\nRelease Date: {release_date}\n\n"
+            race_text = f"<b>{race_name}</b>\nDate: {date}\nRelease Date: {release_date}\n\n"
 
-        # Check if adding this race would exceed limit
-        if len(current_batch) + len(race_text) > 4000:  # Leave some buffer
+            # Check if adding this race would exceed limit
+            if len(current_batch) + len(race_text) > 4000:  # Leave some buffer
+                send_telegram_message(current_batch)
+                batch_count += 1
+                current_batch = f"<b>All Current Races (continued {batch_count}):</b>\n\n" + race_text
+            else:
+                current_batch += race_text
+
+        # Send remaining batch
+        if current_batch:
             send_telegram_message(current_batch)
-            batch_count += 1
-            current_batch = f"<b>All Current Races (continued {batch_count}):</b>\n\n" + race_text
-        else:
-            current_batch += race_text
 
-    # Send remaining batch
-    if current_batch:
-        send_telegram_message(current_batch)
-
-    # Last Message: Differences/Changes (batched if needed)
+    # Always check and send differences (both Sunday and other days)
     if differences:
         diff_header = "🚨🚨🚨🚨🚨🚨🚨🚨🚨\n<b>🔔 NYRR RACE SCHEDULE UPDATED! 🔔</b>\n🚨🚨🚨🚨🚨🚨🚨🚨🚨\n\n<b>CHANGED RACES:</b>\n\n"
         diff_batch = diff_header
@@ -219,8 +223,11 @@ def main():
         differences = find_difference(current_races, existing_data)
         print(f"Found {len(differences)} differences")
 
+        is_sunday = datetime.now().weekday() == 6
+        print(f"Is Sunday: {is_sunday}")
+
         # Send notification
-        send_notification(current_races, differences)
+        send_notification(current_races, differences, is_sunday=is_sunday)
 
         # Save new data
         save_data(current_races)
